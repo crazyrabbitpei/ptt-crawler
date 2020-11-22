@@ -127,4 +127,5 @@ def parse_posts(responses, *, posts_info: list):
         post_info['push_ipdatetimes'] = [element.get_text(strip=True).strip() for element in soup.select('span.push-ipdatetime')]
 
         post_info['url'] = str(response.url)
+        post_info['id'] = re.search(r'www\.ptt\.cc/bbs/(.+).html', post_info['url']).groups()[0]
         posts_info.append(post_info)
