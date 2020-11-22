@@ -63,9 +63,12 @@ async def main(url, *, from_page=0, to_page=1, all_post=False, board_name=None):
     if all_post:
         per_page = int(config['PTT_ALLPOST']['per_page']) # 一次蒐集幾頁的文章連結，一頁最多20篇文章連結
         base_url = config['PTT_ALLPOST']['url']
+        max_page = int(config['PTT_ALLPOST']['max_page'])
     elif board_name:
         per_page = int(config['PTT_BOARD']['per_page']) # 一次蒐集幾頁的文章連結，一頁最多20篇文章連結
         base_url = config['PTT_BOARD']['url'] + '/' + board_name
+        max_page = int(config['PTT_BOARD']['max_page'])
+
     if not from_page:
     # 拿取index.html的初始頁面和前一頁頁數
         with httpx.Client(cookies=COOKIES, timeout=int(config['REQUEST']['timeout'])) as client:
@@ -75,6 +78,11 @@ async def main(url, *, from_page=0, to_page=1, all_post=False, board_name=None):
         start = int(from_page)
 
     end = int(to_page)
+    # 最多蒐集幾頁
+    if max_page > 0:
+        end = start - max_page + 1
+        if end < 1:
+            end = 1
     # 產生要蒐集的頁數連結
     cur_page = start
     while cur_page >= end:
@@ -188,7 +196,7 @@ if __name__ == '__main__':
        sys.exit(0)
 
     start = time.time()
-    asyncio.run(main(main_url, from_page=39505, to_page=39500, all_post=args.allpost, board_name=args.board))
+    asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board))
     end = time.time()
     print(f'start: {start}, end: {end}, total: {end-start}')
 
