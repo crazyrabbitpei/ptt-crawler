@@ -198,6 +198,4 @@ if __name__ == '__main__':
     start = time.time()
     asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board))
     end = time.time()
-    print(f'start: {start}, end: {end}, total: {end-start}')
-
 
