@@ -52,14 +52,13 @@ import json
 from bs4 import BeautifulSoup
 
 
-from tool import web_parse
+from tool import web_parse, upload
 
 
 COOKIES = {'over18': '1'}
 
 
 async def main(url, *, from_page=0, to_page=1, all_post=False, board_name=None):
-    posts_info = [] # 蒐集到的文章資訊
     if all_post:
         per_page = int(config['PTT_ALLPOST']['per_page']) # 一次蒐集幾頁的文章連結，一頁最多20篇文章連結
         base_url = config['PTT_ALLPOST']['url']
@@ -86,11 +85,9 @@ async def main(url, *, from_page=0, to_page=1, all_post=False, board_name=None):
     # 產生要蒐集的頁數連結
     cur_page = start
     while cur_page >= end:
-        post_links = []  # [link]
         links = []
         for page_num in range(cur_page, max(cur_page-per_page, end-1), -1):
             links.append((page_num, base_url+f'/index{page_num}.html'))
-
         logger.debug(links)
         async with httpx.AsyncClient(cookies=COOKIES, timeout=int(config['REQUEST']['timeout'])) as client:
             # 蒐集每一頁的文章連結
@@ -102,6 +99,7 @@ async def main(url, *, from_page=0, to_page=1, all_post=False, board_name=None):
             except Exception:
                 logger.error(traceback.format_exception(*sys.exc_info()))
             else:
+                post_links = []  # [link]
                 web_parse.parse_post_links(result, post_links=post_links, all_post=all_post)
                 logger.debug(f'共有 {len(post_links)} 篇文章要蒐集')
 
@@ -115,8 +113,10 @@ async def main(url, *, from_page=0, to_page=1, all_post=False, board_name=None):
             except Exception:
                 logger.error(traceback.format_exception(*sys.exc_info()))
             else:
+                posts_info = []  # 蒐集到的文章資訊
                 web_parse.parse_posts(result, posts_info=posts_info)
-                await asyncio.to_thread(record, 'result.rec', posts_info)
+                #await asyncio.to_thread(record, 'result.rec', posts_info)
+                upload.bulk('ptt', posts_info)
 
             cur_page -= per_page
 
