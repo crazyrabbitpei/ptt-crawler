@@ -171,11 +171,11 @@ def read_list(file):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-l', '--list', help="蒐集清單檔案", default=None)
+    parser.add_argument('-l', '--list', help="蒐集清單檔案", default=None, metavar='檔名')
     parser.add_argument('-a', '--allpost', help="從allpost板中蒐集文章", action='store_true') # TODO: 測試版先測allpost，所以不指定參數時預設為開啟，正式版要改回store_true
     parser.add_argument('--hotboard', help="蒐集熱門清單", action='store_true')
-    parser.add_argument('-b', '--board', help="蒐集指定板，板名不分大小寫", default=None)
-    parser.add_argument('-u', '--url', help="要爬取的網頁url", default=None)
+    parser.add_argument('-b', '--board', help="蒐集指定板，板名不分大小寫", default=None, metavar='板名')
+    parser.add_argument('-u', '--url', help="要爬取的網頁url", default=None, metavar='網址')
     args = parser.parse_args()
 
     main_url = None
