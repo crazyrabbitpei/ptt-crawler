@@ -128,4 +128,5 @@ def parse_posts(responses, *, posts_info: list):
 
         post_info['url'] = str(response.url)
         post_info['id'] = re.search(r'www\.ptt\.cc/bbs/(.+).html', post_info['url']).groups()[0]
+        post_info['board'] = re.search(r'www\.ptt\.cc/bbs/(.+)/.+', post_info['url']).groups()[0]
         posts_info.append(post_info)
