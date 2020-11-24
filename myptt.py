@@ -174,7 +174,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--url', help="要爬取的網頁url", default=None, metavar='網址')
     parser.add_argument('--max', help="最多爬取幾頁，-1則為爬到第1頁", default=-1, metavar='頁數', type=int)
     parser.add_argument('--per', help="一次同時爬取幾頁", default=3, metavar='頁數', type=int)
-    parser.add_argument('--test', help="僅將結果存到local file", action='store_false')
+    parser.add_argument('--test', help="僅將結果存到local file", action='store_true')
     args = parser.parse_args()
 
     max_page = args.max
