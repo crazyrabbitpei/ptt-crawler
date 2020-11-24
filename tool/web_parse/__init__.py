@@ -10,6 +10,7 @@ from collections import defaultdict
 import configparser
 config = configparser.ConfigParser()
 config.read(os.getenv('SETTING'))
+tw_tz = pytz.timezone('Asia/Taipei')
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,6 @@ def parse_post_links(responses, *, post_links: list[str], all_post=False):
 
     #logger.debug(responses)
     #logger.debug(post_links)
-
 def parse_posts(responses, *, posts_info: list):
     for response in responses:
         post_info = defaultdict(list)
@@ -79,9 +79,8 @@ def parse_posts(responses, *, posts_info: list):
                 post_info['title'] = title_meta.groups()[2].strip()
             elif time_meta:
                 time = time_meta.groups()[0].strip()
-                tz = pytz.timezone('Asia/Taipei')
                 try:
-                    parse_time = datetime.strptime(time, '%a %b %d %H:%M:%S %Y').replace(tzinfo=tz)
+                    parse_time = datetime.strptime(time, '%a %b %d %H:%M:%S %Y').replace(tzinfo=tw_tz)
                 except:
                     logger.error(f'{response.url} 無法拿取正確發布日期: {time}')
                     post_info['time_error'] = True
@@ -142,4 +141,8 @@ def parse_posts(responses, *, posts_info: list):
         post_info['url'] = str(response.url)
         post_info['id'] = re.search(r'www\.ptt\.cc/bbs/(.+).html', post_info['url']).groups()[0]
         post_info['board'] = re.search(r'www\.ptt\.cc/bbs/(.+)/.+', post_info['url']).groups()[0]
+
+        now = datetime.now()
+        tw_now = now.astimezone(tw_tz)
+        post_info['fetch_time'] = tw_now.isoformat()
         posts_info.append(post_info)
