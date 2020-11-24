@@ -27,18 +27,18 @@
 '''
 import os
 import configparser
+from dotenv import load_dotenv
+load_dotenv()
 config = configparser.ConfigParser()
-config.read(os.environ['SETTING'])
-config['LOG']['path'] = os.environ.get('LOG_PATH', None) or os.path.dirname(os.path.abspath(__file__))+'/logs'
-os.environ['LOG_PATH'] = config['LOG']['path']
-with open(os.environ['SETTING'], 'w') as f:
+config.read(os.getenv('SETTING'))
+with open(os.getenv('SETTING'), 'w') as f:
     config.write(f)
 
 import logging
 import logging.config
 
 logging.config.fileConfig(
-    os.path.dirname(os.path.abspath(__file__))+'/'+config['LOG']['config'])
+    os.path.dirname(os.path.abspath(__file__))+'/'+os.getenv('LOG_SETTING'))
 logger = logging.getLogger(__name__)
 
 import sys
@@ -51,22 +51,16 @@ import re
 import json
 from bs4 import BeautifulSoup
 
-
 from tool import web_parse, upload
-
 
 COOKIES = {'over18': '1'}
 
 
-async def main(url, *, from_page=0, to_page=1, all_post=False, board_name=None):
+async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post=False, board_name=None):
     if all_post:
-        per_page = int(config['PTT_ALLPOST']['per_page']) # 一次蒐集幾頁的文章連結，一頁最多20篇文章連結
         base_url = config['PTT_ALLPOST']['url']
-        max_page = int(config['PTT_ALLPOST']['max_page'])
     elif board_name:
-        per_page = int(config['PTT_BOARD']['per_page']) # 一次蒐集幾頁的文章連結，一頁最多20篇文章連結
         base_url = config['PTT_BOARD']['url'] + '/' + board_name
-        max_page = int(config['PTT_BOARD']['max_page'])
 
     if not from_page:
     # 拿取index.html的初始頁面和前一頁頁數
@@ -172,12 +166,16 @@ def read_list(file):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--list', help="蒐集清單檔案", default=None, metavar='檔名')
-    parser.add_argument('-a', '--allpost', help="從allpost板中蒐集文章", action='store_true') # TODO: 測試版先測allpost，所以不指定參數時預設為開啟，正式版要改回store_true
+    parser.add_argument('-a', '--allpost', help="從allpost板中蒐集文章", action='store_true')
     parser.add_argument('--hotboard', help="蒐集熱門清單", action='store_true')
     parser.add_argument('-b', '--board', help="蒐集指定板，板名不分大小寫", default=None, metavar='板名')
     parser.add_argument('-u', '--url', help="要爬取的網頁url", default=None, metavar='網址')
+    parser.add_argument('--max', help="最多爬取幾頁，-1則為爬到第1頁", default=-1, metavar='頁數', type=int)
+    parser.add_argument('--per', help="一次同時爬取幾頁", default=3, metavar='頁數', type=int)
     args = parser.parse_args()
 
+    max_page = args.max
+    per_page = args.per
     main_url = None
     if args.list:
         read_list(args.list)
@@ -185,7 +183,7 @@ if __name__ == '__main__':
     elif args.allpost:
         main_url = config['PTT_ALLPOST']['url']+'/index.html'
     elif args.board:
-        main_url = config['PTT_BOARD']['url']+args.board+'/index.html'
+        main_url = config['PTT_BOARD']['url']+'/'+args.board+'/index.html'
     elif args.hotboard:
         main_url = config['PTT_HOTBOARD']['url']+'/hotboards.html'
         sys.exit(0)
@@ -196,6 +194,6 @@ if __name__ == '__main__':
        sys.exit(0)
 
     start = time.time()
-    asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board))
+    asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page))
     end = time.time()
 
