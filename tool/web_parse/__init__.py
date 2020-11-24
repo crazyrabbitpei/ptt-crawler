@@ -1,6 +1,8 @@
 import logging
 import os
 import re
+from datetime import datetime
+import pytz
 import bs4
 from bs4 import BeautifulSoup
 from collections import defaultdict
@@ -76,7 +78,19 @@ def parse_posts(responses, *, posts_info: list):
                 post_info['category'] = title_meta.groups()[1]
                 post_info['title'] = title_meta.groups()[2].strip()
             elif time_meta:
-                post_info['time'] = time_meta.groups()[0].strip()
+                time = time_meta.groups()[0].strip()
+                try:
+                    parse_time = datetime.strptime(time, '%a %b %d %H:%M:%S %Y')
+                except TypeError:
+                    logger.error(f'{response.url} 無法拿取正確發布日期: {time}')
+                    post_info['time_error'] = True
+                else:
+                    tz = pytz.timezone('Asia/Taipei')
+                    tz_time = parse_time.astimezone(tz)
+                    time = tz_time.isoformat()
+                    post_info['time_error'] = False
+
+                post_info['time'] = time
         # 原文和回覆區的分界線
         content_ip_bottom = None
         # f2為class都為「※」相關資訊，例如:發信站、文章網址、引述、編輯
