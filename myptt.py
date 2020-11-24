@@ -56,7 +56,7 @@ from tool import web_parse, upload
 COOKIES = {'over18': '1'}
 
 
-async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post=False, board_name=None):
+async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post=False, board_name=None, store_local=True):
     if all_post:
         base_url = config['PTT_ALLPOST']['url']
     elif board_name:
@@ -109,8 +109,10 @@ async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post
             else:
                 posts_info = []  # 蒐集到的文章資訊
                 web_parse.parse_posts(result, posts_info=posts_info)
-                #await asyncio.to_thread(record, 'result.rec', posts_info)
-                upload.bulk('ptt', posts_info)
+                if store_local:
+                    await asyncio.to_thread(record, 'result.rec', posts_info)
+                else:
+                    upload.bulk('ptt', posts_info)
 
             cur_page -= per_page
 
@@ -172,6 +174,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--url', help="要爬取的網頁url", default=None, metavar='網址')
     parser.add_argument('--max', help="最多爬取幾頁，-1則為爬到第1頁", default=-1, metavar='頁數', type=int)
     parser.add_argument('--per', help="一次同時爬取幾頁", default=3, metavar='頁數', type=int)
+    parser.add_argument('--test', help="僅將結果存到local file", action='store_false')
     args = parser.parse_args()
 
     max_page = args.max
@@ -194,6 +197,6 @@ if __name__ == '__main__':
        sys.exit(0)
 
     start = time.time()
-    asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page))
+    asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, store_local=args.test))
     end = time.time()
 
