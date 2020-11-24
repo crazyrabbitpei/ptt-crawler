@@ -7,9 +7,9 @@ from collections import defaultdict
 
 import configparser
 config = configparser.ConfigParser()
-config.read(os.environ['SETTING'])
-logger = logging.getLogger(__name__)
+config.read(os.getenv('SETTING'))
 
+logger = logging.getLogger(__name__)
 
 def parse_page_num(soup):
     # 0: 最舊, 1: 上頁, 2: 下頁, 3: 最新
