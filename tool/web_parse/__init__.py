@@ -79,15 +79,14 @@ def parse_posts(responses, *, posts_info: list):
                 post_info['title'] = title_meta.groups()[2].strip()
             elif time_meta:
                 time = time_meta.groups()[0].strip()
+                tz = pytz.timezone('Asia/Taipei')
                 try:
-                    parse_time = datetime.strptime(time, '%a %b %d %H:%M:%S %Y')
-                except TypeError:
+                    parse_time = datetime.strptime(time, '%a %b %d %H:%M:%S %Y').replace(tzinfo=tz)
+                except:
                     logger.error(f'{response.url} 無法拿取正確發布日期: {time}')
                     post_info['time_error'] = True
                 else:
-                    tz = pytz.timezone('Asia/Taipei')
-                    tz_time = parse_time.astimezone(tz)
-                    time = tz_time.isoformat()
+                    time = parse_time.isoformat()
                     post_info['time_error'] = False
 
                 post_info['time'] = time
