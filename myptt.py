@@ -205,3 +205,6 @@ if __name__ == '__main__':
         end = time.time()
         logger.info(f'第 {count} 次循環蒐集結束: 花費 {start - time} 秒')
 
+    asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, store_local=args.test))
+
+
