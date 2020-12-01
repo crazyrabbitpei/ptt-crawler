@@ -175,6 +175,7 @@ if __name__ == '__main__':
     parser.add_argument('--max', help="最多爬取幾頁，-1則為爬到第1頁", default=-1, metavar='頁數', type=int)
     parser.add_argument('--per', help="一次同時爬取幾頁", default=3, metavar='頁數', type=int)
     parser.add_argument('--test', help="僅將結果存到local file", action='store_true')
+    parser.add_argument('--loop', help="是否循環蒐集", action='store_true')
     args = parser.parse_args()
 
     max_page = args.max
@@ -196,7 +197,11 @@ if __name__ == '__main__':
        parser.print_help()
        sys.exit(0)
 
-    start = time.time()
-    asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, store_local=args.test))
-    end = time.time()
+    count = 0
+    while args.loop:
+        count += 1
+        start = time.time()
+        asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, store_local=args.test))
+        end = time.time()
+        logger.info(f'第 {count} 次循環蒐集結束: 花費 {start - time} 秒')
 
