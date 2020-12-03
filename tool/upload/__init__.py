@@ -5,6 +5,8 @@ import os
 import logging
 
 logger = logging.getLogger(__name__)
+logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
+
 
 host = os.getenv('ES_HOST')
 region = os.getenv('ES_REGION')  # e.g. us-west-1

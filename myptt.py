@@ -40,6 +40,7 @@ import logging.config
 logging.config.fileConfig(
     os.path.dirname(os.path.abspath(__file__))+'/'+os.getenv('LOG_SETTING'))
 logger = logging.getLogger(__name__)
+logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
 import sys
 import traceback

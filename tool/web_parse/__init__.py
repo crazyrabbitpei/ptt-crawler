@@ -13,6 +13,7 @@ config.read(os.getenv('SETTING'))
 tw_tz = pytz.timezone('Asia/Taipei')
 
 logger = logging.getLogger(__name__)
+logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
 def parse_page_num(soup):
     # 0: 最舊, 1: 上頁, 2: 下頁, 3: 最新
@@ -92,6 +93,8 @@ def parse_posts(responses, *, posts_info: list):
         # 原文和回覆區的分界線
         content_ip_bottom = None
         # f2為class都為「※」相關資訊，例如:發信站、文章網址、引述、編輯
+        # TODO: f2可能不存在, content_ip_bottom必須有預設值
+        f2 = None
         f2_meta = soup.select('div#main-content > span.f2') or []
         # 找原po ip訊息
         for f2 in f2_meta:
