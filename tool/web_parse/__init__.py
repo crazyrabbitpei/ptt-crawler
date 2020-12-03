@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import bs4
 from bs4 import BeautifulSoup
@@ -81,7 +81,8 @@ def parse_posts(responses, *, posts_info: list):
             elif time_meta:
                 time = time_meta.groups()[0].strip()
                 try:
-                    parse_time = datetime.strptime(time, '%a %b %d %H:%M:%S %Y').replace(tzinfo=tw_tz)
+                    parse_time = datetime.strptime(time, '%a %b %d %H:%M:%S %Y')
+                    parse_time = parse_time.astimezone(tw_tz) - timedelta(hours=8)
                 except:
                     logger.error(f'{response.url} 無法拿取正確發布日期: {time}')
                     post_info['time_error'] = True
@@ -93,7 +94,6 @@ def parse_posts(responses, *, posts_info: list):
         # 原文和回覆區的分界線
         content_ip_bottom = None
         # f2為class都為「※」相關資訊，例如:發信站、文章網址、引述、編輯
-        # TODO: f2可能不存在, content_ip_bottom必須有預設值
         f2 = None
         f2_meta = soup.select('div#main-content > span.f2') or []
         # 找原po ip訊息
@@ -108,38 +108,16 @@ def parse_posts(responses, *, posts_info: list):
         # 原文和回覆區的分界線被原po砍掉了，則採用最後編輯以上為原文
         if not content_ip_bottom:
             content_ip_bottom = f2
-        # 拿取回覆區塊以上和以下的原文訊息，不會有引述和其它轉發的回覆在內，也不會有a tag裡的連結
-        content = []
+
         post_info['content'] = ''
-        p = content_ip_bottom.previous_sibling
-        while p:
-            if type(p) == bs4.element.NavigableString and p.strip():
-                content.append(re.sub(r'\s+', ' ', p.strip()))
-            p = p.previous_sibling
-        p = content_ip_bottom.next_sibling
-        # 以上原文是從下到上蒐集，所以必須倒過來才是原文順序
-        content.reverse()
-        # 以下原文是從上到下蒐集，所以append在後即可
-        while p:
-            if type(p) == bs4.element.NavigableString and p.strip():
-                content.append(re.sub(r'\s+', ' ', p.strip()))
-            p = p.next_sibling
-        post_info['content'] = ' '.join(content)
+        # 有可以分割主文和回覆的物件
+        if content_ip_bottom:
+            # 拿取回覆區塊以上和以下的原文訊息，不會有引述和其它轉發的回覆在內，也不會有a tag裡的連結
+            content = get_post_main(content_ip_bottom)
+            post_info['content'] = content
 
-        # 回覆
-        up, down, normal = 0, 0, 0
-        for element in soup.select('span.push-tag'):
-            if element.get_text(strip=True) == '推':
-                up += 1
-            elif element.get_text(strip=True) == '噓':
-                down += 1
-            else:
-                normal += 1
-        post_info['push_tags'] = {'up': up, 'down': down, 'normal': normal}
-
-        post_info['push_userids'] = [element.get_text(strip=True) for element in soup.select('span.push-userid')]
-        post_info['push_contents'] = [re.sub(r'^: ?', '', re.sub(r'\s+', ' ', element.get_text(strip=True))) for element in soup.select('span.push-content')]
-        post_info['push_ipdatetimes'] = [element.get_text(strip=True).strip() for element in soup.select('span.push-ipdatetime')]
+            # 回覆
+            post_info.update(get_commet_info(soup))
 
         post_info['url'] = str(response.url)
         post_info['id'] = re.search(r'www\.ptt\.cc/bbs/(.+).html', post_info['url']).groups()[0]
@@ -149,3 +127,44 @@ def parse_posts(responses, *, posts_info: list):
         tw_now = now.astimezone(tw_tz)
         post_info['fetch_time'] = tw_now.isoformat()
         posts_info.append(post_info)
+
+
+def get_post_main(content_ip_bottom):
+    content = []
+    p = content_ip_bottom.previous_sibling
+    while p:
+        if type(p) == bs4.element.NavigableString and p.strip():
+            content.append(re.sub(r'\s+', ' ', p.strip()))
+        p = p.previous_sibling
+    p = content_ip_bottom.next_sibling
+    # 以上原文是從下到上蒐集，所以必須倒過來才是原文順序
+    content.reverse()
+    # 以下原文是從上到下蒐集，所以append在後即可
+    while p:
+        if type(p) == bs4.element.NavigableString and p.strip():
+            content.append(re.sub(r'\s+', ' ', p.strip()))
+        p = p.next_sibling
+
+    return ' '.join(content)
+
+
+def get_commet_info(soup):
+    post_info = {}
+    up, down, normal = 0, 0, 0
+    for element in soup.select('span.push-tag'):
+        if element.get_text(strip=True) == '推':
+            up += 1
+        elif element.get_text(strip=True) == '噓':
+            down += 1
+        else:
+            normal += 1
+    post_info['push_tags'] = {'up': up, 'down': down, 'normal': normal}
+
+    post_info['push_userids'] = [element.get_text(
+        strip=True) for element in soup.select('span.push-userid')]
+    post_info['push_contents'] = [re.sub(r'^: ?', '', re.sub(
+        r'\s+', ' ', element.get_text(strip=True))) for element in soup.select('span.push-content')]
+    post_info['push_ipdatetimes'] = [element.get_text(
+        strip=True).strip() for element in soup.select('span.push-ipdatetime')]
+
+    return post_info
