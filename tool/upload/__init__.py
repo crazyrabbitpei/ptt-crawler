@@ -44,11 +44,16 @@ def bulk(index, /, results):
     bulk_file = ''
     count = 0
     for result in results:
-        bulk_file += '{ "index" : { "_index" : "' + index + \
-            '", "_type" : "_doc", "_id" : "' + str(result['id']) + '"} }\n'
+        if not result:
+            continue
+
+        bulk_file += '{ "index" : { "_index" : "' + index + '", "_type" : "_doc", "_id" : "' + str(result['id']) + '"} }\n'
         bulk_file += json.dumps(result) + '\n'
         count += 1
         if count == int(config['UPLOAD']['per_record']):
             es.bulk(bulk_file)
             count = 0
             bulk_file = ''
+
+    if bulk_file:
+        es.bulk(bulk_file)
