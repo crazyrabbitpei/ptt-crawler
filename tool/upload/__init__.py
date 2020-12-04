@@ -1,7 +1,7 @@
 from elasticsearch import Elasticsearch, RequestsHttpConnection, AsyncElasticsearch, AIOHttpConnection
 import boto3
 import json
-import os
+import os, time
 import logging
 import configparser
 
@@ -43,6 +43,8 @@ def bulk(index, /, results):
         connect()
     bulk_file = ''
     count = 0
+    total = 0
+    start = time.time()
     for result in results:
         if not result:
             continue
@@ -50,6 +52,7 @@ def bulk(index, /, results):
         bulk_file += '{ "index" : { "_index" : "' + index + '", "_type" : "_doc", "_id" : "' + str(result['id']) + '"} }\n'
         bulk_file += json.dumps(result) + '\n'
         count += 1
+        total += 1
         if count == int(config['UPLOAD']['per_record']):
             es.bulk(bulk_file)
             count = 0
@@ -57,3 +60,4 @@ def bulk(index, /, results):
 
     if bulk_file:
         es.bulk(bulk_file)
+    logger.info(f'上傳完 {total} 筆資料: 花費 {time.time() - start} 秒')
