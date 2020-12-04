@@ -1,4 +1,4 @@
-from elasticsearch import Elasticsearch, RequestsHttpConnection
+from elasticsearch import Elasticsearch, RequestsHttpConnection, AsyncElasticsearch, AIOHttpConnection
 import boto3
 import json
 import os
@@ -12,16 +12,19 @@ host = os.getenv('ES_HOST')
 region = os.getenv('ES_REGION')  # e.g. us-west-1
 service = 'es'
 auth = None
+es = None
 
 credentials = boto3.Session().get_credentials()
-if credentials:
-    logger.info('By aws auth')
+if credentials and os.environ.get('AUTH', 'basic') == 'aws':
+    logger.info('Operate by aws auth')
     from requests_aws4auth import AWS4Auth
-    auth = AWS4Auth(credentials.access_key, credentials.secret_key, region, service, session_token=credentials.token)
+    auth = AWS4Auth(credentials.access_key, credentials.secret_key,
+                    region, service, session_token=credentials.token)
 else:
-    logger.info('By basic auth')
+    logger.info('Operate by basic auth')
     auth = (os.getenv('ES_USER'), os.getenv("ES_PASSWD"))
-es = None
+
+
 def connect():
     global es
     es = Elasticsearch(
