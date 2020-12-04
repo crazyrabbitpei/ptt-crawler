@@ -155,7 +155,8 @@ async def fetch_post_content(client, /, url):
         etype, value, tb = sys.exc_info()
         logger.error(f'蒐集 {exc.request.url} 文章失敗: {etype}')
     except httpx.HTTPStatusError as exc:
-        logger.error(f'蒐集 {exc.request.url} 文章失敗: {exc.response.status_code}')
+        if exc.response.status_code != 404:
+            logger.debug(f'蒐集 {exc.request.url} 文章失敗: {exc.response.status_code}')
     else:
         return response
 
