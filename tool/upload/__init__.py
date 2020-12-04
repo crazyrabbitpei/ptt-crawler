@@ -3,6 +3,10 @@ import boto3
 import json
 import os
 import logging
+import configparser
+
+config = configparser.ConfigParser()
+config.read(os.getenv('SETTING'))
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
@@ -38,9 +42,13 @@ def bulk(index, /, results):
     if not es:
         connect()
     bulk_file = ''
+    count = 0
     for result in results:
         bulk_file += '{ "index" : { "_index" : "' + index + \
             '", "_type" : "_doc", "_id" : "' + str(result['id']) + '"} }\n'
         bulk_file += json.dumps(result) + '\n'
-
-    es.bulk(bulk_file)
+        count += 1
+        if count == config['UPLOAD']['per_record']:
+            es.bulk(bulk_file)
+            count = 0
+            bulk_file = ''
