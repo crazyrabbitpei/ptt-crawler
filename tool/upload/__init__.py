@@ -48,7 +48,7 @@ def bulk(index, /, results):
             '", "_type" : "_doc", "_id" : "' + str(result['id']) + '"} }\n'
         bulk_file += json.dumps(result) + '\n'
         count += 1
-        if count == config['UPLOAD']['per_record']:
+        if count == int(config['UPLOAD']['per_record']):
             es.bulk(bulk_file)
             count = 0
             bulk_file = ''
