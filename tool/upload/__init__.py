@@ -8,14 +8,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
 
-host = os.getenv('ES_HOST')
 region = os.getenv('ES_REGION')  # e.g. us-west-1
 service = 'es'
 auth = None
 es = None
 
-credentials = boto3.Session().get_credentials()
-if credentials and os.environ.get('AUTH', 'basic') == 'aws':
+if os.environ.get('AUTH', 'basic') == 'aws':
+    credentials = boto3.Session().get_credentials()
     logger.info('Operate by aws auth')
     from requests_aws4auth import AWS4Auth
     auth = AWS4Auth(credentials.access_key, credentials.secret_key,
@@ -28,7 +27,8 @@ else:
 def connect():
     global es
     es = Elasticsearch(
-        hosts=[{'host': host, 'port': 443}],
+        hosts=os.getenv('ES_HOSTS').split(',') or ['127.0.0.1'],
+        port=os.getenv('ES_PORT'),
         http_auth=auth,
         use_ssl=True,
         verify_certs=True,
