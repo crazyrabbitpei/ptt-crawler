@@ -3,3 +3,4 @@ logs
 __pycache__
 .python-version
 .env
+.vscode

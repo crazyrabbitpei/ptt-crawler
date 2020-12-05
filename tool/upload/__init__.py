@@ -1,4 +1,4 @@
-from elasticsearch import Elasticsearch, RequestsHttpConnection, AsyncElasticsearch, AIOHttpConnection
+from elasticsearch import Elasticsearch, RequestsHttpConnection, AsyncElasticsearch, AIOHttpConnection, Transport
 import boto3
 import json
 import os, time
@@ -36,7 +36,11 @@ def connect():
         http_auth=auth,
         use_ssl=True,
         verify_certs=True,
-        connection_class=RequestsHttpConnection)
+        connection_class=RequestsHttpConnection,
+        timeout=60,
+        max_retries=10,
+        retry_on_timeout=True
+        )
 
 def bulk(index, /, results):
     if not es:
