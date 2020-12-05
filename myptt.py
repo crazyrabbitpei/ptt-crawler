@@ -115,7 +115,7 @@ async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post
                 if store_local:
                     await asyncio.to_thread(record, 'result.rec', posts_info)
                 else:
-                    upload.bulk('ptt', posts_info)
+                    upload.bulk(os.getenv('ES_INDEX'), posts_info)
 
             cur_page -= per_page
 
