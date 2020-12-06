@@ -59,7 +59,8 @@ def parse_post_links(responses, *, post_links: list[str], all_post=False):
 
     #logger.debug(responses)
     #logger.debug(post_links)
-def parse_posts(responses, *, posts_info: list):
+
+def parse_posts(responses, *, posts_info: list, fetch_comment=False):
     for response in responses:
         post_info = defaultdict(list)
         if not response:
@@ -84,11 +85,13 @@ def parse_posts(responses, *, posts_info: list):
                     parse_time = datetime.strptime(time, '%a %b %d %H:%M:%S %Y')
                     parse_time = parse_time.astimezone(tw_tz) - timedelta(hours=8)
                 except:
+                    # 不匯入錯誤日期的資料
                     logger.error(f'{response.url} 無法拿取正確發布日期: {time}')
-                    post_info['time_error'] = True
+                    continue
+                    #post_info['time_error'] = True
                 else:
                     time = parse_time.isoformat()
-                    post_info['time_error'] = False
+                    #post_info['time_error'] = False
 
                 post_info['time'] = time
         # 原文和回覆區的分界線
@@ -117,7 +120,11 @@ def parse_posts(responses, *, posts_info: list):
             post_info['content'] = content
 
             # 回覆
-            post_info.update(get_commet_info(soup))
+            if fetch_comment:
+                post_info.update(get_commet_info(soup))
+        # 略過無法區別回覆和主文的文章
+        else:
+            continue
 
         post_info['url'] = str(response.url)
         post_info['id'] = re.search(r'www\.ptt\.cc/bbs/(.+).html', post_info['url']).groups()[0]

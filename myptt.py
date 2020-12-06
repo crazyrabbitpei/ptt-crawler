@@ -59,7 +59,7 @@ from tool import web_parse, upload
 COOKIES = {'over18': '1'}
 
 
-async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post=False, board_name=None, store_local=True):
+async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post=False, board_name=None, store_local=True, fetch_comment=False):
     if all_post:
         base_url = config['PTT_ALLPOST']['url']
     elif board_name:
@@ -111,7 +111,7 @@ async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post
                 logger.error(traceback.format_exception(*sys.exc_info()))
             else:
                 posts_info = []  # 蒐集到的文章資訊
-                web_parse.parse_posts(result, posts_info=posts_info)
+                web_parse.parse_posts(result, posts_info=posts_info, fetch_comment=fetch_comment)
                 if store_local:
                     await asyncio.to_thread(record, 'result.rec', posts_info)
                 else:
@@ -180,6 +180,7 @@ if __name__ == '__main__':
     parser.add_argument('--per', help="一次同時爬取幾頁", default=3, metavar='頁數', type=int)
     parser.add_argument('--test', help="僅將結果存到local file", action='store_true')
     parser.add_argument('--loop', help="是否循環蒐集", action='store_true')
+    parser.add_argument('--comment', help="是否蒐集回覆", action='store_true')
     args = parser.parse_args()
 
     max_page = args.max
@@ -205,7 +206,7 @@ if __name__ == '__main__':
     while args.loop:
         count += 1
         start = time.time()
-        asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, store_local=args.test))
+        asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, store_local=args.test, fetch_comment=args.comment))
         end = time.time()
         logger.info(f'第 {count} 次循環蒐集結束: 花費 {end - start} 秒')
 
