@@ -28,23 +28,26 @@ else:
     auth = (os.getenv('ES_USER'), os.getenv("ES_PASSWD"))
 
 
-def connect():
+def connect(*, is_test=False):
     global es
     es = Elasticsearch(
         hosts=os.getenv('ES_HOSTS').split(',') or ['127.0.0.1'],
         port=os.getenv('ES_PORT'),
         http_auth=auth,
-        use_ssl=True,
-        verify_certs=True,
+        use_ssl=not is_test,
+        verify_certs=not is_test,
         connection_class=RequestsHttpConnection,
         timeout=int(config['REQUEST']['timeout']),
         max_retries=int(config['REQUEST']['max_retries']),
         retry_on_timeout=True
         )
 
-def bulk(index, /, results):
+def bulk(index, /, results, is_test=False):
+    if not results:
+        return
+
     if not es:
-        connect()
+        connect(is_test=is_test)
     bulk_file = ''
     count = 0
     total = 0

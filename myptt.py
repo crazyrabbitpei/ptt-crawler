@@ -58,7 +58,7 @@ from tool import web_parse, upload
 COOKIES = {'over18': '1'}
 
 
-async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post=False, board_name=None, store_local=True, fetch_comment=False):
+async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post=False, board_name=None, fetch_comment=False, is_test=False):
     if all_post:
         base_url = config['PTT_ALLPOST']['url']
     elif board_name:
@@ -90,10 +90,9 @@ async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post
             tasks = [asyncio.create_task(fetch_post_list(client, page_num, link)) for page_num, link in links]
             try:
                 result = await asyncio.gather(*tasks, return_exceptions=True)
-            except asyncio.TimeoutError:
-                logger.error(traceback.format_exception(*sys.exc_info()))
-            except Exception:
-                logger.error(traceback.format_exception(*sys.exc_info()))
+            except:
+                logger.error('文章連結蒐集失敗')
+                raise
             else:
                 post_links = []  # [link]
                 web_parse.parse_post_links(result, post_links=post_links, all_post=all_post)
@@ -102,19 +101,23 @@ async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post
             # 蒐集現有文章連結內容
             tasks = [asyncio.create_task(fetch_post_content(
                 client, link)) for link in post_links]
+            posts_info = []  # 蒐集到的文章資訊
             try:
                 result = await asyncio.gather(*tasks)
-            except asyncio.TimeoutError:
-                logger.error(traceback.format_exception(*sys.exc_info()))
-            except Exception:
-                logger.error(traceback.format_exception(*sys.exc_info()))
+            except:
+                logger.error('文章內容蒐集失敗')
+                raise
             else:
-                posts_info = []  # 蒐集到的文章資訊
                 web_parse.parse_posts(result, posts_info=posts_info, fetch_comment=fetch_comment)
-                if store_local:
-                    await asyncio.to_thread(record, 'result.rec', posts_info)
-                else:
-                    upload.bulk(os.getenv('ES_INDEX'), posts_info)
+
+            if is_test:
+                await asyncio.to_thread(record, 'result.rec', posts_info)
+
+            try:
+                upload.bulk(os.getenv('ES_INDEX'), posts_info, is_test=is_test)
+            except:
+                logger.error('上傳失敗')
+                raise
 
             cur_page -= per_page
 
@@ -160,6 +163,9 @@ async def fetch_post_content(client, /, url):
         return response
 
 def record(file, r):
+    if not r:
+        return
+
     with open(file, 'a') as f:
         json.dump(r, f, ensure_ascii=False)
 
@@ -177,7 +183,7 @@ if __name__ == '__main__':
     parser.add_argument('-u', '--url', help="要爬取的網頁url", default=None, metavar='網址')
     parser.add_argument('--max', help="最多爬取幾頁，-1則為爬到第1頁", default=-1, metavar='頁數', type=int)
     parser.add_argument('--per', help="一次同時爬取幾頁", default=3, metavar='頁數', type=int)
-    parser.add_argument('--test', help="僅將結果存到local file", action='store_true')
+    parser.add_argument('--test', help="是否為測試模式, 是的話預設儲存到local file以及上傳連線關閉ssl相關驗證", action='store_true')
     parser.add_argument('--loop', help="是否循環蒐集", action='store_true')
     parser.add_argument('--comment', help="是否蒐集回覆", action='store_true')
     args = parser.parse_args()
@@ -205,11 +211,17 @@ if __name__ == '__main__':
     while args.loop:
         count += 1
         start = time.time()
-        asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, store_local=args.test, fetch_comment=args.comment))
+        try:
+            asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, fetch_comment=args.comment, is_test=args.test))
+        except:
+            logger.error('系統運行失敗', exc_info=True)
+            break
+
         end = time.time()
         logger.info(f'第 {count} 次循環蒐集結束: 花費 {end - start} 秒')
 
     if not args.loop:
-        asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, store_local=args.test))
-
-
+        try:
+            asyncio.run(main(main_url, all_post=args.allpost, board_name=args.board, max_page=max_page, per_page=per_page, is_test=args.test))
+        except:
+            logger.error('系統運行失敗', exc_info=True)
