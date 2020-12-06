@@ -72,7 +72,7 @@ def parse_posts(responses, *, posts_info: list, fetch_comment=False):
         # 文章上方資訊
         for meta in soup.find_all('div', class_='article-metaline'):
             author_meta = re.search(r'作者\s*([^\s]+)', meta.get_text(strip=True))
-            title_meta = re.search(r'標題\s*((?:Re|RE|re)\:)?\s*(\[[\w\-]+\])?\s*(.*)', meta.get_text(strip=True))
+            title_meta = re.search(r'標題\s*((?:Re|RE|re)\:)?\s*(?:\[([\w\-]+)\])?\s*(.*)', meta.get_text(strip=True))
             time_meta = re.search(r'時間\s*([a-zA-Z\d: ]+)$', meta.get_text(strip=True))
             if author_meta:
                 post_info['author'] = author_meta.groups()[0]
