@@ -6,7 +6,7 @@ import logging
 import configparser
 
 config = configparser.ConfigParser()
-config.read(os.getenv('SETTING'))
+config.read(os.environ.get('SETTING', 'settings.ini'))
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
@@ -37,8 +37,8 @@ def connect():
         use_ssl=True,
         verify_certs=True,
         connection_class=RequestsHttpConnection,
-        timeout=60,
-        max_retries=10,
+        timeout=int(config['REQUEST']['timeout']),
+        max_retries=int(config['REQUEST']['max_retries']),
         retry_on_timeout=True
         )
 
