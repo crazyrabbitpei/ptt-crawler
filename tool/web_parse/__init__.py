@@ -9,7 +9,8 @@ from collections import defaultdict
 
 import configparser
 config = configparser.ConfigParser()
-config.read(os.getenv('SETTING'))
+config.read(os.environ.get('SETTING', 'settings.ini'))
+
 tw_tz = pytz.timezone('Asia/Taipei')
 
 logger = logging.getLogger(__name__)
