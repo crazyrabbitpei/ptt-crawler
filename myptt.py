@@ -30,15 +30,14 @@ import configparser
 from dotenv import load_dotenv
 load_dotenv()
 config = configparser.ConfigParser()
-config.read(os.getenv('SETTING'))
-with open(os.getenv('SETTING'), 'w') as f:
+config.read(os.environ.get('SETTING', 'settings.ini'))
+with open(os.environ.get('SETTING', 'settings.ini'), 'w') as f:
     config.write(f)
 
 import logging
 import logging.config
 
-logging.config.fileConfig(
-    os.path.dirname(os.path.abspath(__file__))+'/'+os.getenv('LOG_SETTING'))
+logging.config.fileConfig(os.path.dirname(os.path.abspath(__file__))+'/'+os.environ.get('LOG_SETTING', 'logging.ini'))
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 es_log = logging.getLogger("elasticsearch")
