@@ -58,7 +58,6 @@ def bulk(index, /, results, is_test=False):
         logger.error(f"Bulk 失敗", exc_info=True)
         logger.error(e)
     else:
-        logger.info(result)
         success_num, fail_info = result
         logger.info(f'上傳完 {success_num} 筆資料: 花費 {time.time() - start} 秒')
         if len(fail_info) > 0:
