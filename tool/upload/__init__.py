@@ -1,4 +1,4 @@
-from elasticsearch import Elasticsearch, RequestsHttpConnection, AsyncElasticsearch, AIOHttpConnection, TransportError
+from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection, AsyncElasticsearch, AIOHttpConnection, TransportError
 import boto3
 import json
 import os, time
@@ -39,7 +39,7 @@ def connect(*, is_test=False):
         connection_class=RequestsHttpConnection,
         timeout=int(config['REQUEST']['timeout']),
         max_retries=int(config['REQUEST']['max_retries']),
-        retry_on_timeout=True
+        retry_on_timeout=True,
         )
 
 def bulk(index, /, results, is_test=False):
@@ -50,31 +50,49 @@ def bulk(index, /, results, is_test=False):
 
     if not es:
         connect(is_test=is_test)
-    bulk_file = ''
-    count = 0
-    total = 0
+
     start = time.time()
+    try:
+        result = helpers.bulk(es, gendata(index, results))
+    except helpers.BulkIndexError as e:
+        logger.error(f"Bulk 失敗", exc_info=True)
+        logger.error(e)
+    else:
+        logger.info(result)
+        success_num, fail_info = result
+        logger.info(f'上傳完 {success_num} 筆資料: 花費 {time.time() - start} 秒')
+        if len(fail_info) > 0:
+            logger.error(fail_info)
+        else:
+            ok = True
+    # try:
+    #     if bulk_file:
+    #         es.bulk(bulk_file)
+    # except TransportError as e:
+    #     logger.error(f"Bulk 失敗, {e.error}: {e.status_code}, {json.dumps(e.info)}")
+    #     retry = True
+    #     return ok, retry
+
+    return ok, retry
+
+
+def gendata(index, /, results):
+
     for result in results:
         if not result:
             continue
+        yield {
+            "_index": index,
+            "_id": str(result['id']),
+            **result
+        }
 
-        bulk_file += '{ "index" : { "_index" : "' + index + '", "_type" : "_doc", "_id" : "' + str(result['id']) + '"} }\n'
-        bulk_file += json.dumps(result) + '\n'
-        count += 1
-        total += 1
-        if count == int(config['UPLOAD']['per_record']):
-            es.bulk(bulk_file)
-            count = 0
-            bulk_file = ''
-
-    try:
-        if bulk_file:
-            es.bulk(bulk_file)
-    except TransportError as e:
-        logger.error(f"Bulk 失敗, {e.error}: {e.status_code}, {json.dumps(e.info)}")
-        retry = True
-        return ok, retry
-
-    ok = True
-    logger.info(f'上傳完 {total} 筆資料: 花費 {time.time() - start} 秒')
-    return ok, retry
+        # bulk_file += '{ "index" : { "_index" : "' + index + \
+        #     '", "_type" : "_doc", "_id" : "' + str(result['id']) + '"} }\n'
+        # bulk_file += json.dumps(result) + '\n'
+        # count += 1
+        # total += 1
+        # if count == int(config['UPLOAD']['per_record']):
+        #     es.bulk(bulk_file)
+        #     count = 0
+        #     bulk_file = ''
