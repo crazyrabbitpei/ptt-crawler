@@ -46,6 +46,7 @@ es_log.setLevel(logging.CRITICAL)
 import sys
 import traceback
 import argparse
+import elasticsearch
 import httpx
 import asyncio
 import time
@@ -113,13 +114,19 @@ async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post
             if is_test:
                 await asyncio.to_thread(record, 'result.rec', posts_info)
 
-            try:
-                upload.bulk(os.getenv('ES_INDEX'), posts_info, is_test=is_test)
-            except:
-                logger.error('上傳失敗')
-                raise
+            retry = True
+            while retry:
+                try:
+                    ok, retry = upload.bulk(os.getenv('ES_INDEX'), posts_info, is_test=is_test)
+                except:
+                    logger.error('上傳失敗')
+                    raise
+
+                logger.error(f"{int(config['REQUEST']['retry_after'])} 秒後重新上傳")
+                time.sleep(int(config['REQUEST']['retry_after']))
 
             cur_page -= per_page
+
 
 def fetch_last_page(client, /, url):
     try:

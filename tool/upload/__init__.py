@@ -1,4 +1,4 @@
-from elasticsearch import Elasticsearch, RequestsHttpConnection, AsyncElasticsearch, AIOHttpConnection, Transport
+from elasticsearch import Elasticsearch, RequestsHttpConnection, AsyncElasticsearch, AIOHttpConnection, TransportError
 import boto3
 import json
 import os, time
@@ -43,6 +43,8 @@ def connect(*, is_test=False):
         )
 
 def bulk(index, /, results, is_test=False):
+    ok = False
+    retry = False
     if not results:
         return
 
@@ -65,6 +67,14 @@ def bulk(index, /, results, is_test=False):
             count = 0
             bulk_file = ''
 
-    if bulk_file:
-        es.bulk(bulk_file)
+    try:
+        if bulk_file:
+            es.bulk(bulk_file)
+    except TransportError as e:
+        logger.error(f"Bulk 失敗, {e.error}: {e.status_code}, {json.dumps(e.info)}")
+        retry = True
+        return ok, retry
+
+    ok = True
     logger.info(f'上傳完 {total} 筆資料: 花費 {time.time() - start} 秒')
+    return ok, retry
