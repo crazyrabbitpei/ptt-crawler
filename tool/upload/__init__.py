@@ -57,6 +57,9 @@ def bulk(index, /, results, is_test=False):
     except helpers.BulkIndexError as e:
         logger.error(f"Bulk 失敗", exc_info=True)
         logger.error(e)
+    except TransportError as e:
+        logger.error(f"Bulk 失敗, {e.error}: {e.status_code}")
+        retry = True
     else:
         success_num, fail_info = result
         logger.info(f'上傳完 {success_num} 筆資料: 花費 {time.time() - start} 秒')
