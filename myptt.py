@@ -117,7 +117,7 @@ async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post
             retry = True
             while retry:
                 try:
-                    ok, retry = upload.bulk(os.getenv('ES_INDEX'), posts_info, is_test=is_test)
+                    ok, retry = upload.bulk(os.getenv('ES_INDEX'), posts_info=posts_info, is_test=is_test)
                 except:
                     logger.error('上傳失敗')
                     raise

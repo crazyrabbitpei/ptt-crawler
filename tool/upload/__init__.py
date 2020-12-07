@@ -42,10 +42,11 @@ def connect(*, is_test=False):
         retry_on_timeout=True,
         )
 
-def bulk(index, /, results, is_test=False):
+
+def bulk(index, /, posts_info=None, is_test=False):
     ok = False
     retry = False
-    if not results:
+    if not posts_info:
         return
 
     if not es:
@@ -53,7 +54,7 @@ def bulk(index, /, results, is_test=False):
 
     start = time.time()
     try:
-        result = helpers.bulk(es, gendata(index, results))
+        result = helpers.bulk(es, gendata(index, posts_info))
     except helpers.BulkIndexError as e:
         logger.error(f"Bulk 失敗", exc_info=True)
         logger.error(e)
