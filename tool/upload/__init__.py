@@ -47,7 +47,7 @@ def bulk(index, /, posts_info=None, is_test=False):
     ok = False
     retry = False
     if not posts_info:
-        return
+        return ok, retry
 
     if not es:
         connect(is_test=is_test)
@@ -63,7 +63,7 @@ def bulk(index, /, posts_info=None, is_test=False):
         retry = True
     else:
         success_num, fail_info = result
-        logger.info(f'上傳完 {success_num} 筆資料: 花費 {time.time() - start} 秒')
+        logger.info(f'上傳完 {success_num} 筆資料, 失敗 {len(fail_info)} 筆: 花費 {time.time() - start} 秒')
         if len(fail_info) > 0:
             logger.error(fail_info)
         else:

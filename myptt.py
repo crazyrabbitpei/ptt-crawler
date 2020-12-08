@@ -121,7 +121,7 @@ async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post
                 except:
                     logger.error('上傳失敗')
                     raise
-                if not ok:
+                if retry:
                     logger.error(f"{int(config['REQUEST']['retry_after'])} 秒後重新上傳")
                     time.sleep(int(config['REQUEST']['retry_after']))
 
