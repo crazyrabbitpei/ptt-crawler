@@ -32,7 +32,6 @@ def connect(*, is_test=False):
     global es
     es = Elasticsearch(
         hosts=os.getenv('ES_HOSTS').split(',') or ['127.0.0.1'],
-        port=os.getenv('ES_PORT'),
         http_auth=auth,
         use_ssl=not is_test,
         verify_certs=not is_test,
