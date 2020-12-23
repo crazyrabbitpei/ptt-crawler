@@ -68,8 +68,14 @@ async def main(url, *, from_page=0, to_page=1, max_page=-1, per_page=3, all_post
     if not from_page:
     # 拿取index.html的初始頁面和前一頁頁數
         with httpx.Client(cookies=COOKIES, timeout=int(config['REQUEST']['timeout'])) as client:
-            oldest, prev, next_, latest = fetch_last_page(client, url)
-            start = int(latest)
+            try:
+                oldest, prev, next_, latest = fetch_last_page(client, url)
+            except (httpx.RequestError, httpx.HTTPStatusError):
+                logger.error(f"連線錯誤, {int(config['REQUEST']['retry_after'])} 秒後重新連線")
+                time.sleep(int(config['REQUEST']['retry_after']))
+                return
+            else:
+                start = int(latest)
     else:
         start = int(from_page)
 
@@ -135,8 +141,10 @@ def fetch_last_page(client, /, url):
     except httpx.RequestError as exc:
         etype, value, tb = sys.exc_info()
         logger.error(f'蒐集最新 {exc.request.url} 文章列表失敗: {etype}')
+        raise
     except httpx.HTTPStatusError as exc:
         logger.error(f'蒐集最新 {exc.request.url} 文章列表失敗: {exc.response.status_code}')
+        raise
     else:
         soup = BeautifulSoup(response.text, 'html.parser')
         page_nums = web_parse.parse_page_num(soup)
